@@ -9,7 +9,7 @@ import com.taskflow.vacation.management.employee.mapper.EmployeeMapper;
 import com.taskflow.vacation.management.employee.repository.EmployeeRepository;
 import com.taskflow.vacation.management.employee.repository.EmployeeSpec;
 import com.taskflow.vacation.management.employee.validation.EmployeeValidator;
-import com.taskflow.vacation.management.user.UserService;
+import com.taskflow.vacation.management.user.service.UserService;
 import com.taskflow.vacation.management.user.entity.User;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

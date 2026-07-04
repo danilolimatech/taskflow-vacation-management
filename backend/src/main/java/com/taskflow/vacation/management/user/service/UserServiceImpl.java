@@ -1,4 +1,4 @@
-package com.taskflow.vacation.management.user;
+package com.taskflow.vacation.management.user.service;
 
 import com.taskflow.vacation.management.common.exception.domain.BadRequestException;
 import com.taskflow.vacation.management.common.exception.domain.ConflictException;
@@ -6,9 +6,13 @@ import com.taskflow.vacation.management.common.exception.domain.ResourceNotFound
 import com.taskflow.vacation.management.user.dto.ChangePasswordRequest;
 import com.taskflow.vacation.management.user.entity.Role;
 import com.taskflow.vacation.management.user.entity.User;
+import com.taskflow.vacation.management.user.repository.UserRepository;
 import com.taskflow.vacation.management.user.validation.UserValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +21,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -44,6 +48,17 @@ public class UserServiceImpl implements UserService {
     public void updateUsername(UUID userId, String username) {
         userValidator.validateUsername(username, userId);
         findById(userId).changeUsername(username);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException(username));
+    }
+
+    public UserDetails loadUserById(UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException(id.toString()));
     }
 
     private User findById(UUID userId) {

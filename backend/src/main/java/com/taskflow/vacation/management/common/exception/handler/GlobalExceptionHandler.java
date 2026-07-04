@@ -1,5 +1,6 @@
 package com.taskflow.vacation.management.common.exception.handler;
 
+import com.taskflow.vacation.management.common.exception.domain.ForbiddenException;
 import com.taskflow.vacation.management.common.exception.dto.ErrorResponse;
 import com.taskflow.vacation.management.common.exception.domain.BadRequestException;
 import com.taskflow.vacation.management.common.exception.domain.ConflictException;
@@ -42,6 +43,13 @@ public class GlobalExceptionHandler {
         String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of(HttpStatus.BAD_REQUEST, message, request.getRequestURI()));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex, Locale locale, HttpServletRequest request) {
+        String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(HttpStatus.FORBIDDEN, message, request.getRequestURI()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -1,4 +1,4 @@
-package com.taskflow.vacation.management.user;
+package com.taskflow.vacation.management.user.service;
 
 import com.taskflow.vacation.management.user.dto.ChangePasswordRequest;
 import com.taskflow.vacation.management.user.entity.Role;

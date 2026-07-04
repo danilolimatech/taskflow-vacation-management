@@ -1,7 +1,7 @@
 package com.taskflow.vacation.management.user.validation;
 
 import com.taskflow.vacation.management.common.exception.domain.ConflictException;
-import com.taskflow.vacation.management.user.UserRepository;
+import com.taskflow.vacation.management.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

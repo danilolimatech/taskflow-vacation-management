@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -21,22 +22,28 @@ public class EmployeeController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
     public EmployeeResponse create(@Valid @RequestBody CreateEmployeeRequest request) {
         return employeeService.create(request);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
     public void update(@PathVariable UUID id, @Valid @RequestBody UpdateEmployeeRequest request) {
         employeeService.update(id, request);
     }
 
     @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasRole('ADMIN')")
     public EmployeeResponse findById(@PathVariable UUID id) {
         return employeeService.findById(id);
     }
 
     @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasRole('ADMIN')")
     public Page<EmployeeResponse> findAll(
             @RequestParam(required = false) UUID managerId,
             @RequestParam(required = false) String fullName,
@@ -48,6 +55,7 @@ public class EmployeeController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(@PathVariable UUID id) {
         employeeService.delete(id);
     }

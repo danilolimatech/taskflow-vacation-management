@@ -7,9 +7,13 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -18,7 +22,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "users")
 @SQLRestriction("deleted_at IS NULL")
-public class User extends AuditableEntity {
+public class User extends AuditableEntity implements UserDetails {
 
     public User(String username, String password, Role role) {
         this.username = username;
@@ -42,6 +46,11 @@ public class User extends AuditableEntity {
 
     @OneToOne(mappedBy = "user")
     private Employee employee;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
