@@ -24,30 +24,48 @@ public class GlobalExceptionHandler {
 
     private final MessageSource messageSource;
 
+    private String sanitize(String input) {
+        if (input == null) return null;
+        return input.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;")
+                    .replace("'", "&#x27;");
+    }
+
+    private Object[] sanitizeArgs(Object[] args) {
+        if (args == null) return null;
+        Object[] sanitized = new Object[args.length];
+        for (int i = 0; i < args.length; i++) {
+            sanitized[i] = args[i] instanceof String ? sanitize((String) args[i]) : args[i];
+        }
+        return sanitized;
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex, Locale locale, HttpServletRequest request) {
-        String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
+        String message = messageSource.getMessage(ex.getMessageKey(), sanitizeArgs(ex.getArgs()), locale);
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of(HttpStatus.NOT_FOUND, message, request.getRequestURI()));
     }
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex, Locale locale, HttpServletRequest request) {
-        String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
+        String message = messageSource.getMessage(ex.getMessageKey(), sanitizeArgs(ex.getArgs()), locale);
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ErrorResponse.of(HttpStatus.CONFLICT, message, request.getRequestURI()));
     }
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex, Locale locale, HttpServletRequest request) {
-        String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
+        String message = messageSource.getMessage(ex.getMessageKey(), sanitizeArgs(ex.getArgs()), locale);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of(HttpStatus.BAD_REQUEST, message, request.getRequestURI()));
     }
 
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex, Locale locale, HttpServletRequest request) {
-        String message = messageSource.getMessage(ex.getMessageKey(), ex.getArgs(), locale);
+        String message = messageSource.getMessage(ex.getMessageKey(), sanitizeArgs(ex.getArgs()), locale);
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ErrorResponse.of(HttpStatus.FORBIDDEN, message, request.getRequestURI()));
     }

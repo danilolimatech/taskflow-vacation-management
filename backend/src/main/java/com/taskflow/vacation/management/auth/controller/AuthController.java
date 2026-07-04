@@ -38,7 +38,7 @@ public class AuthController {
             ));
             return new LoginResponse(token, user.getId(), user.getUsername(), user.getRole());
         } catch (BadCredentialsException e) {
-            throw new BadRequestException("auth.invalid.credentials");
+            throw new BadRequestException("auth.invalid.credentials", e);
         }
     }
 }

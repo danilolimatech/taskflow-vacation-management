@@ -13,4 +13,10 @@ public class BadRequestException extends RuntimeException {
         this.messageKey = messageKey;
         this.args = args;
     }
+
+    public BadRequestException(String messageKey, Throwable cause) {
+        super(messageKey, cause);
+        this.messageKey = messageKey;
+        this.args = new Object[0];
+    }
 }
