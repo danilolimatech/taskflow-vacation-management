@@ -39,4 +39,12 @@ public class User extends AuditableEntity {
         this.password = password;
         this.role = role;
     }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
+
+    public void changeUsername(String username) {
+        this.username = username;
+    }
 }
