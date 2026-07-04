@@ -18,7 +18,10 @@ public class EmployeeValidator {
     private final EmployeeRepository employeeRepository;
 
     public void validateEmail(String email, UUID employeeId) {
-        if (employeeRepository.existsByEmailAndIdNot(email, employeeId)) {
+        boolean conflict = employeeId == null
+                ? employeeRepository.existsByEmail(email)
+                : employeeRepository.existsByEmailAndIdNot(email, employeeId);
+        if (conflict) {
             throw new ConflictException("employee.email.conflict", email);
         }
     }
@@ -27,7 +30,16 @@ public class EmployeeValidator {
         if (role == Role.COLLABORATOR && managerId == null) {
             throw new BadRequestException("employee.collaborator.manager.required");
         }
+        if ((role == Role.MANAGER || role == Role.ADMIN) && managerId != null) {
+            throw new BadRequestException("employee.manager.not.allowed");
+        }
+    }
 
+    public void validateBusinessRulesOnUpdate(Employee employee, UUID managerId) {
+        Role role = employee.getRole();
+        if (role == Role.COLLABORATOR && managerId == null) {
+            throw new BadRequestException("employee.collaborator.manager.required");
+        }
         if ((role == Role.MANAGER || role == Role.ADMIN) && managerId != null) {
             throw new BadRequestException("employee.manager.not.allowed");
         }

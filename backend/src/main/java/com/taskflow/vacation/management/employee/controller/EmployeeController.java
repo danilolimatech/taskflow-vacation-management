@@ -36,14 +36,14 @@ public class EmployeeController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public EmployeeResponse findById(@PathVariable UUID id) {
         return employeeService.findById(id);
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public Page<EmployeeResponse> findAll(
             @RequestParam(required = false) UUID managerId,
             @RequestParam(required = false) String fullName,

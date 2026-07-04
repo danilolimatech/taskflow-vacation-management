@@ -37,7 +37,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee manager = employeeValidator.getManager(request.managerId());
 
         User user = userService.create(request.username(), request.password(), request.role());
-        Employee employee = employeeRepository.save(new Employee(request.fullName(), request.email(), manager, user));
+        Employee employee = employeeRepository.save(new Employee(request.fullName(), request.email(), request.role(), manager, user));
 
         return employeeMapper.toResponse(employee);
     }
@@ -47,6 +47,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = findActiveById(id);
 
         employeeValidator.validateEmail(request.email(), id);
+        employeeValidator.validateBusinessRulesOnUpdate(employee, request.managerId());
         Employee manager = employeeValidator.getManager(request.managerId());
 
         userService.updateUsername(employee.getUser().getId(), request.username());
