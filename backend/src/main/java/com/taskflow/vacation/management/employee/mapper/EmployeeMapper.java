@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 public interface EmployeeMapper {
 
     @Mapping(target = "managerId", source = "manager.id")
+    @Mapping(target = "managerName", source = "manager.fullName")
     @Mapping(target = "username", source = "user.username")
     @Mapping(target = "role", source = "user.role")
     EmployeeResponse toResponse(Employee employee);

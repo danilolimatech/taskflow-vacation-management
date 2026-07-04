@@ -1,18 +1,19 @@
 package com.taskflow.vacation.management.employee.controller;
 
-import com.taskflow.vacation.management.employee.dto.CreateEmployeeRequest;
-import com.taskflow.vacation.management.employee.dto.EmployeeResponse;
-import com.taskflow.vacation.management.employee.dto.UpdateEmployeeRequest;
+import com.taskflow.vacation.management.employee.dto.*;
 import com.taskflow.vacation.management.employee.service.EmployeeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/employees")
+@RequestMapping("/v1/employees")
 @RequiredArgsConstructor
 public class EmployeeController {
 
@@ -26,10 +27,28 @@ public class EmployeeController {
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void update(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateEmployeeRequest request
-    ) {
+    public void update(@PathVariable UUID id, @Valid @RequestBody UpdateEmployeeRequest request) {
         employeeService.update(id, request);
+    }
+
+    @GetMapping("/{id}")
+    public EmployeeResponse findById(@PathVariable UUID id) {
+        return employeeService.findById(id);
+    }
+
+    @GetMapping
+    public Page<EmployeeResponse> findAll(
+            @RequestParam(required = false) UUID managerId,
+            @RequestParam(required = false) String fullName,
+            @RequestParam(required = false) String email,
+            @PageableDefault(size = 20, sort = "fullName") Pageable pageable
+    ) {
+        return employeeService.findAll(managerId, fullName, email, pageable);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        employeeService.delete(id);
     }
 }

@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import org.hibernate.annotations.SQLRestriction;
+
 import java.util.UUID;
 
 @Getter
@@ -15,7 +17,14 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "users")
+@SQLRestriction("deleted_at IS NULL")
 public class User extends AuditableEntity {
+
+    public User(String username, String password, Role role) {
+        this.username = username;
+        this.password = password;
+        this.role = role;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -34,17 +43,15 @@ public class User extends AuditableEntity {
     @OneToOne(mappedBy = "user")
     private Employee employee;
 
-    public User(String username, String password, Role role) {
-        this.username = username;
-        this.password = password;
-        this.role = role;
-    }
-
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
     }
 
     public void changeUsername(String username) {
         this.username = username;
+    }
+
+    public void deactivate() {
+        delete();
     }
 }

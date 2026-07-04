@@ -1,6 +1,5 @@
 package com.taskflow.vacation.management.user;
 
-
 import com.taskflow.vacation.management.common.exception.domain.BadRequestException;
 import com.taskflow.vacation.management.common.exception.domain.ConflictException;
 import com.taskflow.vacation.management.common.exception.domain.ResourceNotFoundException;

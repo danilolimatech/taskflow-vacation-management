@@ -28,10 +28,6 @@ public abstract class AuditableEntity {
     @Column
     private LocalDateTime deletedAt;
 
-    public boolean isDeleted() {
-        return deletedAt != null;
-    }
-
     public void delete() {
         this.deletedAt = LocalDateTime.now();
     }

@@ -2,8 +2,10 @@ package com.taskflow.vacation.management.employee.repository;
 
 import com.taskflow.vacation.management.employee.domain.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.UUID;
 
-public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
-    boolean existsByEmailAndIdNot(String email, UUID id);}
+public interface EmployeeRepository extends JpaRepository<Employee, UUID>, JpaSpecificationExecutor<Employee> {
+    boolean existsByEmailAndIdNot(String email, UUID id);
+}

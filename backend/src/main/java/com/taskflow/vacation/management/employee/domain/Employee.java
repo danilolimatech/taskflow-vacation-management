@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.util.UUID;
 
@@ -15,7 +16,15 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "employees")
+@SQLRestriction("deleted_at IS NULL")
 public class Employee extends AuditableEntity {
+
+    public Employee(String fullName, String email, Employee manager, User user) {
+        this.fullName = fullName;
+        this.email = email;
+        this.manager = manager;
+        this.user = user;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -34,11 +43,4 @@ public class Employee extends AuditableEntity {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    public Employee(String fullName, String email, Employee manager, User user) {
-        this.fullName = fullName;
-        this.email = email;
-        this.manager = manager;
-        this.user = user;
-    }
 }

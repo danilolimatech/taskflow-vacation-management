@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/v1/users")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -18,10 +18,7 @@ public class UserController {
 
     @PatchMapping("/{id}/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void changePassword(
-            @PathVariable UUID id,
-            @Valid @RequestBody ChangePasswordRequest request
-    ) {
+    public void changePassword(@PathVariable UUID id, @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(id, request);
     }
 }

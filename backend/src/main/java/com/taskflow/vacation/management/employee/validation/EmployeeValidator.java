@@ -27,6 +27,10 @@ public class EmployeeValidator {
         if (role == Role.COLLABORATOR && managerId == null) {
             throw new BadRequestException("employee.collaborator.manager.required");
         }
+
+        if ((role == Role.MANAGER || role == Role.ADMIN) && managerId != null) {
+            throw new BadRequestException("employee.manager.not.allowed");
+        }
     }
 
     public Employee getManager(UUID managerId) {
