@@ -9,5 +9,6 @@ import org.mapstruct.Mapping;
 public interface VacationMapper {
 
     @Mapping(target = "employeeId", source = "employee.id")
+    @Mapping(target = "employeeName", source = "employee.fullName")
     VacationResponse toResponse(Vacation vacation);
 }

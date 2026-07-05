@@ -1,21 +1,30 @@
 package com.taskflow.vacation.management.vacation.service;
 
+import com.taskflow.vacation.management.common.exception.domain.ConflictException;
+import com.taskflow.vacation.management.common.exception.domain.ForbiddenException;
 import com.taskflow.vacation.management.common.exception.domain.ResourceNotFoundException;
+import com.taskflow.vacation.management.common.security.SecurityUtils;
 import com.taskflow.vacation.management.employee.domain.Employee;
 import com.taskflow.vacation.management.employee.repository.EmployeeRepository;
+import com.taskflow.vacation.management.user.entity.Role;
 import com.taskflow.vacation.management.user.entity.User;
 import com.taskflow.vacation.management.vacation.dto.VacationRequest;
 import com.taskflow.vacation.management.vacation.dto.VacationResponse;
+import com.taskflow.vacation.management.vacation.dto.VacationSummaryResponse;
 import com.taskflow.vacation.management.vacation.entity.Vacation;
 import com.taskflow.vacation.management.vacation.entity.VacationStatus;
 import com.taskflow.vacation.management.vacation.mapper.VacationMapper;
 import com.taskflow.vacation.management.vacation.repository.VacationRepository;
+import com.taskflow.vacation.management.vacation.repository.VacationSpec;
 import com.taskflow.vacation.management.vacation.validation.VacationValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -27,15 +36,14 @@ public class VacationServiceImpl implements VacationService {
     private final EmployeeRepository employeeRepository;
     private final VacationMapper vacationMapper;
     private final VacationValidator vacationValidator;
+    private final SecurityUtils securityUtils;
 
     @Override
     public VacationResponse create(VacationRequest request) {
 
         vacationValidator.validateDates(request.startDate(), request.endDate());
 
-        User currentUser = (User) SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getPrincipal();
+        User currentUser = securityUtils.getCurrentUser();
 
         Employee employee = employeeRepository.findByUser(currentUser)
                 .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
@@ -63,9 +71,7 @@ public class VacationServiceImpl implements VacationService {
         Vacation vacation = vacationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("vacation.not_found", id));
 
-        User currentUser = (User) SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getPrincipal();
+        User currentUser = securityUtils.getCurrentUser();
 
         Employee employee = employeeRepository.findByUser(currentUser)
                 .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
@@ -74,5 +80,154 @@ public class VacationServiceImpl implements VacationService {
 
         vacation.setStartDate(request.startDate());
         vacation.setEndDate(request.endDate());
+    }
+
+    @Override
+    public VacationResponse findById(UUID id) {
+
+        User currentUser = securityUtils.getCurrentUser();
+
+        Vacation vacation = vacationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("vacation.not_found", id));
+
+        if (currentUser.getRole() == Role.ADMIN) {
+            return vacationMapper.toResponse(vacation);
+        }
+
+        Employee employee = employeeRepository.findByUser(currentUser)
+                .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
+
+        if (currentUser.getRole() == Role.MANAGER) {
+            if (!vacation.getEmployee().getManager().getId().equals(employee.getId())) {
+                throw new ForbiddenException("vacation.access_denied");
+            }
+            return vacationMapper.toResponse(vacation);
+        }
+
+        if (!vacation.getEmployee().getId().equals(employee.getId())) {
+            throw new ForbiddenException("vacation.access_denied");
+        }
+
+        return vacationMapper.toResponse(vacation);
+    }
+
+    @Override
+    public void delete(UUID id) {
+
+        Vacation vacation = vacationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("vacation.not_found", id));
+
+        User currentUser = securityUtils.getCurrentUser();
+
+        Employee employee = employeeRepository.findByUser(currentUser)
+                .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
+
+        if (vacation.getStatus() != VacationStatus.PENDING) {
+            throw new ConflictException("vacation.not_pending");
+        }
+
+        vacation.delete();
+    }
+
+    @Override
+    public void approve(UUID id) {
+
+        Vacation vacation = vacationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("vacation.not_found", id));
+
+        User currentUser = securityUtils.getCurrentUser();
+
+        if (currentUser.getRole() != Role.ADMIN) {
+            Employee reviewer = employeeRepository.findByUser(currentUser)
+                    .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
+            vacationValidator.validateApproveOrReject(vacation, reviewer);
+        } else {
+            vacationValidator.validateApproveOrReject(vacation, null);
+        }
+
+        vacationValidator.validateOverlapping(vacation.getStartDate(), vacation.getEndDate());
+
+        vacation.setStatus(VacationStatus.APPROVED);
+    }
+
+    @Override
+    public void reject(UUID id) {
+
+        Vacation vacation = vacationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("vacation.not_found", id));
+
+        User currentUser = securityUtils.getCurrentUser();
+
+        if (currentUser.getRole() != Role.ADMIN) {
+            Employee reviewer = employeeRepository.findByUser(currentUser)
+                    .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
+            vacationValidator.validateApproveOrReject(vacation, reviewer);
+        } else {
+            vacationValidator.validateApproveOrReject(vacation, null);
+        }
+
+        vacation.setStatus(VacationStatus.REJECTED);
+    }
+
+    @Override
+    public Page<VacationResponse> findAll(String employeeName, Pageable pageable) {
+
+        User currentUser = securityUtils.getCurrentUser();
+
+        Specification<Vacation> spec = Specification.allOf(
+                VacationSpec.hasEmployeeNameLike(employeeName)
+        );
+
+        if (currentUser.getRole() == Role.ADMIN) {
+            return vacationRepository.findAll(spec, pageable).map(vacationMapper::toResponse);
+        }
+
+        Employee currentEmployee = employeeRepository.findByUser(currentUser)
+                .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
+
+        if (currentUser.getRole() == Role.MANAGER) {
+            List<UUID> subordinateIds = employeeRepository.findAllByManagerId(currentEmployee.getId())
+                    .stream().map(Employee::getId).toList();
+            spec = spec.and(VacationSpec.hasEmployeeIdIn(subordinateIds));
+        } else {
+            // COLLABORATOR: só vê os próprios
+            spec = spec.and(VacationSpec.hasEmployeeId(currentEmployee.getId()));
+        }
+
+        return vacationRepository.findAll(spec, pageable).map(vacationMapper::toResponse);
+    }
+
+    @Override
+    public VacationSummaryResponse getSummary() {
+
+        User currentUser = securityUtils.getCurrentUser();
+
+        if (currentUser.getRole() == Role.ADMIN) {
+            return new VacationSummaryResponse(
+                    vacationRepository.countDistinctCollaborators(),
+                    vacationRepository.countByStatus(VacationStatus.PENDING),
+                    vacationRepository.countByStatus(VacationStatus.APPROVED),
+                    vacationRepository.countByStatus(VacationStatus.REJECTED)
+            );
+        }
+
+        Employee currentEmployee = employeeRepository.findByUser(currentUser)
+                .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
+
+        List<UUID> employeeIds;
+
+        if (currentUser.getRole() == Role.MANAGER) {
+            employeeIds = employeeRepository.findAllByManagerId(currentEmployee.getId())
+                    .stream().map(Employee::getId).toList();
+        } else {
+            employeeIds = List.of(currentEmployee.getId());
+        }
+
+        return new VacationSummaryResponse(
+                vacationRepository.countDistinctCollaboratorsByEmployeeIds(employeeIds),
+                vacationRepository.countByStatusAndEmployeeIdIn(VacationStatus.PENDING, employeeIds),
+                vacationRepository.countByStatusAndEmployeeIdIn(VacationStatus.APPROVED, employeeIds),
+                vacationRepository.countByStatusAndEmployeeIdIn(VacationStatus.REJECTED, employeeIds)
+        );
     }
 }

@@ -3,6 +3,7 @@ package com.taskflow.vacation.management.vacation.dto;
 import com.taskflow.vacation.management.vacation.entity.VacationStatus;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record VacationResponse(
@@ -11,10 +12,16 @@ public record VacationResponse(
 
         UUID employeeId,
 
+        String employeeName,
+
         LocalDate startDate,
 
         LocalDate endDate,
 
-        VacationStatus status
+        VacationStatus status,
+
+        LocalDateTime createdAt,
+
+        LocalDateTime updatedAt
 ) {
 }

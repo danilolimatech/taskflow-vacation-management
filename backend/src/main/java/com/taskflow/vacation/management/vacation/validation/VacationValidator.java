@@ -4,6 +4,7 @@ import com.taskflow.vacation.management.common.exception.domain.BadRequestExcept
 import com.taskflow.vacation.management.common.exception.domain.ConflictException;
 import com.taskflow.vacation.management.common.exception.domain.ForbiddenException;
 import com.taskflow.vacation.management.employee.domain.Employee;
+import com.taskflow.vacation.management.user.entity.Role;
 import com.taskflow.vacation.management.vacation.entity.Vacation;
 import com.taskflow.vacation.management.vacation.entity.VacationStatus;
 import com.taskflow.vacation.management.vacation.repository.VacationRepository;
@@ -44,6 +45,21 @@ public class VacationValidator {
 
         if (vacation.getStatus() != VacationStatus.PENDING) {
             throw new ConflictException("vacation.not_pending");
+        }
+    }
+
+    public void validateApproveOrReject(Vacation vacation, Employee reviewer) {
+
+        if (vacation.getStatus() != VacationStatus.PENDING) {
+            throw new ConflictException("vacation.not_pending");
+        }
+
+        if (reviewer != null && reviewer.getRole() == Role.MANAGER) {
+            Employee vacationEmployee = vacation.getEmployee();
+            if (vacationEmployee.getManager() == null ||
+                    !vacationEmployee.getManager().getId().equals(reviewer.getId())) {
+                throw new ForbiddenException("vacation.access_denied");
+            }
         }
     }
 }
