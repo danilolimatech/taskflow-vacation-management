@@ -1,6 +1,6 @@
 INSERT INTO users (id, username, password, role, created_at, updated_at) VALUES
-('33d1c2ad-7ced-4871-834c-f75a796306b6', 'admin.carlos',  '$2a$10$0/5rdnmjxqOqq335bQkiy.jVLu0sxLUAVl3NVdLh6r8FsotMnuw92', 'ADMIN', NOW(), NOW()),
-('93e053ed-9b6a-4eca-8301-bae13508ecac', 'admin.ana',     '$2a$10$0/5rdnmjxqOqq335bQkiy.jVLu0sxLUAVl3NVdLh6r8FsotMnuw92', 'ADMIN', NOW(), NOW());
+('33d1c2ad-7ced-4871-834c-f75a796306b6', 'admin.maribel',  '$2a$10$0/5rdnmjxqOqq335bQkiy.jVLu0sxLUAVl3NVdLh6r8FsotMnuw92', 'ADMIN', NOW(), NOW()),
+('93e053ed-9b6a-4eca-8301-bae13508ecac', 'admin.nuno',     '$2a$10$0/5rdnmjxqOqq335bQkiy.jVLu0sxLUAVl3NVdLh6r8FsotMnuw92', 'ADMIN', NOW(), NOW());
 
 INSERT INTO users (id, username, password, role, created_at, updated_at) VALUES
 ('02290195-33d9-4011-b2a4-e54b1bf73e40', 'manager.joao',  '$2a$10$0/5rdnmjxqOqq335bQkiy.jVLu0sxLUAVl3NVdLh6r8FsotMnuw92', 'MANAGER', NOW(), NOW()),

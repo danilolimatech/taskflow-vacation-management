@@ -9,6 +9,7 @@ import com.taskflow.vacation.management.user.entity.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -46,8 +47,17 @@ public class EmployeeValidator {
     }
 
     public Employee getManager(UUID managerId) {
-        if (managerId == null) return null;
-        return employeeRepository.findById(managerId)
+        if (managerId == null) {
+            return null;
+        }
+
+        Employee manager = employeeRepository.findById(managerId)
                 .orElseThrow(() -> new ResourceNotFoundException("employee.manager.not_found", managerId));
+
+        if (manager.getRole() != Role.MANAGER) {
+            throw new BadRequestException("employee.manager.not_manager", managerId);
+        }
+
+        return manager;
     }
 }

@@ -1,6 +1,7 @@
 package com.taskflow.vacation.management.employee.repository;
 
 import com.taskflow.vacation.management.employee.domain.Employee;
+import com.taskflow.vacation.management.user.entity.Role;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Locale;
@@ -23,5 +24,11 @@ public class EmployeeSpec {
     public static Specification<Employee> hasEmailLike(String email) {
         return (root, query, cb) -> email == null ? null
                 : cb.like(cb.lower(root.get("email")), "%" + email.toLowerCase(Locale.ROOT) + "%");
+    }
+
+    public static Specification<Employee> hasRole(Role role) {
+        return (root, query, cb) ->
+                role == null ? null
+                        : cb.equal(root.get("user").get("role"), role);
     }
 }

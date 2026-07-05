@@ -1,5 +1,6 @@
 package com.taskflow.vacation.management.employee.service;
 
+import com.taskflow.vacation.management.common.exception.domain.BadRequestException;
 import com.taskflow.vacation.management.common.exception.domain.ResourceNotFoundException;
 import com.taskflow.vacation.management.employee.domain.Employee;
 import com.taskflow.vacation.management.employee.dto.CreateEmployeeRequest;
@@ -9,6 +10,7 @@ import com.taskflow.vacation.management.employee.mapper.EmployeeMapper;
 import com.taskflow.vacation.management.employee.repository.EmployeeRepository;
 import com.taskflow.vacation.management.employee.repository.EmployeeSpec;
 import com.taskflow.vacation.management.employee.validation.EmployeeValidator;
+import com.taskflow.vacation.management.user.entity.Role;
 import com.taskflow.vacation.management.user.service.UserService;
 import com.taskflow.vacation.management.user.entity.User;
 import jakarta.transaction.Transactional;
@@ -44,7 +46,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public void update(UUID id, UpdateEmployeeRequest request) {
-        Employee employee = findActiveById(id);
+        Employee employee = findEmployeeById(id);
 
         employeeValidator.validateEmail(request.email(), id);
         employeeValidator.validateBusinessRulesOnUpdate(employee, request.managerId());
@@ -59,27 +61,33 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public EmployeeResponse findById(UUID id) {
-        return employeeMapper.toResponse(findActiveById(id));
+        return employeeMapper.toResponse(findEmployeeById(id));
     }
 
     @Override
-    public Page<EmployeeResponse> findAll(UUID managerId, String fullName, String email, Pageable pageable) {
+    public Page<EmployeeResponse> findAll(UUID managerId, String fullName, String email, Role role, Pageable pageable) {
         Specification<Employee> spec = Specification.allOf(
                 EmployeeSpec.hasManagerId(managerId),
                 EmployeeSpec.hasFullNameLike(fullName),
-                EmployeeSpec.hasEmailLike(email)
+                EmployeeSpec.hasEmailLike(email),
+                EmployeeSpec.hasRole(role)
         );
         return employeeRepository.findAll(spec, pageable).map(employeeMapper::toResponse);
     }
 
     @Override
     public void delete(UUID id) {
-        Employee employee = findActiveById(id);
+        Employee employee = findEmployeeById(id);
+
+        if (employeeRepository.existsByManagerId(id)) {
+            throw new BadRequestException("employee.manager.has_collaborators");
+        }
+
         employee.delete();
         employee.getUser().deactivate();
     }
 
-    private Employee findActiveById(UUID id) {
+    private Employee findEmployeeById(UUID id) {
         return employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", id));
     }

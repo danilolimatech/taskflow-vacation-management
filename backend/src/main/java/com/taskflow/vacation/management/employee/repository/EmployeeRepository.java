@@ -12,4 +12,5 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID>, JpaSp
     boolean existsByEmail(String email);
     boolean existsByEmailAndIdNot(String email, UUID id);
     Optional<Employee> findByUser(User user);
+    boolean existsByManagerId(UUID managerId);
 }

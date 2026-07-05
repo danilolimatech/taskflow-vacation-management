@@ -2,6 +2,7 @@ package com.taskflow.vacation.management.employee.controller;
 
 import com.taskflow.vacation.management.employee.dto.*;
 import com.taskflow.vacation.management.employee.service.EmployeeService;
+import com.taskflow.vacation.management.user.entity.Role;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -48,9 +49,10 @@ public class EmployeeController {
             @RequestParam(required = false) UUID managerId,
             @RequestParam(required = false) String fullName,
             @RequestParam(required = false) String email,
+            @RequestParam(required = false) Role role,
             @PageableDefault(size = 20, sort = "fullName") Pageable pageable
     ) {
-        return employeeService.findAll(managerId, fullName, email, pageable);
+        return employeeService.findAll(managerId, fullName, email, role, pageable);
     }
 
     @DeleteMapping("/{id}")

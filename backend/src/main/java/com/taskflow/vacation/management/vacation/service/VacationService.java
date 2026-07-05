@@ -9,5 +9,4 @@ public interface VacationService {
 
     VacationResponse create(VacationRequest request);
     void update(UUID id, VacationRequest request);
-
 }
