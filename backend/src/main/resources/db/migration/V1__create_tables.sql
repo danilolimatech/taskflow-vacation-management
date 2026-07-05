@@ -19,3 +19,14 @@ CREATE TABLE employees (
     updated_at  TIMESTAMP    NOT NULL,
     deleted_at  TIMESTAMP
 );
+
+CREATE TABLE vacations (
+     id          UUID        NOT NULL PRIMARY KEY,
+     employee_id UUID        NOT NULL REFERENCES employees(id),
+     start_date  DATE        NOT NULL,
+     end_date    DATE        NOT NULL,
+     status      VARCHAR(20) NOT NULL,
+     created_at  TIMESTAMP   NOT NULL,
+     updated_at  TIMESTAMP   NOT NULL,
+     deleted_at  TIMESTAMP
+);
