@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -65,7 +66,7 @@ public class VacationController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN', 'COLLABORATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'COLLABORATOR')")
     public void delete(@PathVariable UUID id) {
         vacationService.delete(id);
     }
