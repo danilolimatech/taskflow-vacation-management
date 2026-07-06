@@ -19,6 +19,7 @@ import com.taskflow.vacation.management.vacation.repository.VacationSpec;
 import com.taskflow.vacation.management.vacation.validation.VacationValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -40,6 +42,7 @@ public class VacationServiceImpl implements VacationService {
 
     @Override
     public VacationResponse create(VacationRequest request) {
+        log.info("Creating vacation. period={} to {}", request.startDate(), request.endDate());
 
         vacationValidator.validateDates(request.startDate(), request.endDate());
 
@@ -48,23 +51,18 @@ public class VacationServiceImpl implements VacationService {
         Employee employee = employeeRepository.findByUser(currentUser)
                 .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
 
-        // Adicionar penas no approve
-        // vacationValidator.validateOverlapping(request.startDate(), request.endDate());
-
         Vacation vacation = vacationRepository.save(
-                new Vacation(
-                        employee,
-                        request.startDate(),
-                        request.endDate(),
-                        VacationStatus.PENDING
-                )
+                new Vacation(employee, request.startDate(), request.endDate(), VacationStatus.PENDING)
         );
+
+        log.info("Vacation created successfully. id={}, employeeId={}", vacation.getId(), employee.getId());
 
         return vacationMapper.toResponse(vacation);
     }
 
     @Override
     public void update(UUID id, VacationRequest request) {
+        log.info("Updating vacation. id={}, new period={} to {}", id, request.startDate(), request.endDate());
 
         vacationValidator.validateDates(request.startDate(), request.endDate());
 
@@ -80,10 +78,13 @@ public class VacationServiceImpl implements VacationService {
 
         vacation.setStartDate(request.startDate());
         vacation.setEndDate(request.endDate());
+
+        log.info("Vacation updated successfully. id={}", id);
     }
 
     @Override
     public VacationResponse findById(UUID id) {
+        log.debug("Fetching vacation. id={}", id);
 
         User currentUser = securityUtils.getCurrentUser();
 
@@ -91,6 +92,7 @@ public class VacationServiceImpl implements VacationService {
                 .orElseThrow(() -> new ResourceNotFoundException("vacation.not_found", id));
 
         if (currentUser.getRole() == Role.ADMIN) {
+            log.debug("Vacation fetched successfully. id={}", id);
             return vacationMapper.toResponse(vacation);
         }
 
@@ -101,6 +103,7 @@ public class VacationServiceImpl implements VacationService {
             if (!vacation.getEmployee().getManager().getId().equals(employee.getId())) {
                 throw new ForbiddenException("vacation.access_denied");
             }
+            log.debug("Vacation fetched successfully. id={}", id);
             return vacationMapper.toResponse(vacation);
         }
 
@@ -108,29 +111,37 @@ public class VacationServiceImpl implements VacationService {
             throw new ForbiddenException("vacation.access_denied");
         }
 
+        log.debug("Vacation fetched successfully. id={}", id);
         return vacationMapper.toResponse(vacation);
     }
 
     @Override
     public void delete(UUID id) {
+        log.info("Deleting vacation. id={}", id);
 
         Vacation vacation = vacationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("vacation.not_found", id));
-
-        User currentUser = securityUtils.getCurrentUser();
-
-        Employee employee = employeeRepository.findByUser(currentUser)
-                .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
 
         if (vacation.getStatus() != VacationStatus.PENDING) {
             throw new ConflictException("vacation.not_pending");
         }
 
+        User currentUser = securityUtils.getCurrentUser();
+
+        if (currentUser.getRole() != Role.ADMIN) {
+            Employee employee = employeeRepository.findByUser(currentUser)
+                    .orElseThrow(() -> new ResourceNotFoundException("employee.not_found", currentUser.getId()));
+            vacationValidator.validateDelete(vacation, employee);
+        }
+
         vacation.delete();
+
+        log.info("Vacation deleted successfully. id={}, deletedBy={}", id, currentUser.getUsername());
     }
 
     @Override
     public void approve(UUID id) {
+        log.info("Approving vacation. id={}", id);
 
         Vacation vacation = vacationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("vacation.not_found", id));
@@ -148,10 +159,13 @@ public class VacationServiceImpl implements VacationService {
         vacationValidator.validateOverlapping(vacation.getStartDate(), vacation.getEndDate());
 
         vacation.setStatus(VacationStatus.APPROVED);
+
+        log.info("Vacation approved successfully. id={}, approvedBy={}", id, currentUser.getUsername());
     }
 
     @Override
     public void reject(UUID id) {
+        log.info("Rejecting vacation. id={}", id);
 
         Vacation vacation = vacationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("vacation.not_found", id));
@@ -167,15 +181,20 @@ public class VacationServiceImpl implements VacationService {
         }
 
         vacation.setStatus(VacationStatus.REJECTED);
+
+        log.info("Vacation rejected successfully. id={}, rejectedBy={}", id, currentUser.getUsername());
     }
 
     @Override
-    public Page<VacationResponse> findAll(String employeeName, Pageable pageable) {
-
+    public Page<VacationResponse> findAll(String employeeName, VacationStatus status, Pageable pageable) {
         User currentUser = securityUtils.getCurrentUser();
 
+        log.debug("Listing vacations. user={}, role={}, filter=employeeName:{}, status:{}, page={}",
+                currentUser.getUsername(), currentUser.getRole(), employeeName, status, pageable.getPageNumber());
+
         Specification<Vacation> spec = Specification.allOf(
-                VacationSpec.hasEmployeeNameLike(employeeName)
+                VacationSpec.hasEmployeeNameLike(employeeName),
+                VacationSpec.hasStatus(status)
         );
 
         if (currentUser.getRole() == Role.ADMIN) {
@@ -190,7 +209,6 @@ public class VacationServiceImpl implements VacationService {
                     .stream().map(Employee::getId).toList();
             spec = spec.and(VacationSpec.hasEmployeeIdIn(subordinateIds));
         } else {
-            // COLLABORATOR: só vê os próprios
             spec = spec.and(VacationSpec.hasEmployeeId(currentEmployee.getId()));
         }
 
@@ -199,8 +217,9 @@ public class VacationServiceImpl implements VacationService {
 
     @Override
     public VacationSummaryResponse getSummary() {
-
         User currentUser = securityUtils.getCurrentUser();
+
+        log.debug("Fetching vacation summary. user={}, role={}", currentUser.getUsername(), currentUser.getRole());
 
         if (currentUser.getRole() == Role.ADMIN) {
             return new VacationSummaryResponse(

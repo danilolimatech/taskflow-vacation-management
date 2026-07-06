@@ -1,11 +1,27 @@
 import React from 'react';
-import { Box, Card, CardContent, Typography, Grid } from '@mui/material';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Grid,
+    Alert,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Skeleton,
+} from '@mui/material';
 import {
     PeopleRounded,
-    BeachAccessRounded,
     PendingActionsRounded,
     CheckCircleRounded,
+    CancelRounded,
 } from '@mui/icons-material';
+import { useDashboard } from './hooks/useDashboard';
+import VacationStatusChip from '../vacations/components/VacationStatusChip';
 
 interface StatCardProps {
     title: string;
@@ -13,9 +29,10 @@ interface StatCardProps {
     icon: React.ReactNode;
     color: string;
     subtitle?: string;
+    loading?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, subtitle }) => (
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, subtitle, loading }) => (
     <Card sx={{ height: '100%' }}>
         <CardContent sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -23,9 +40,13 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, subtitle
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                         {title}
                     </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5 }}>
-                        {value}
-                    </Typography>
+                    {loading ? (
+                        <Skeleton width={48} height={40} sx={{ mt: 0.5 }} />
+                    ) : (
+                        <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5 }}>
+                            {value}
+                        </Typography>
+                    )}
                     {subtitle && (
                         <Typography variant="caption" color="text.secondary">
                             {subtitle}
@@ -51,35 +72,53 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, subtitle
     </Card>
 );
 
+const formatDate = (date: string) =>
+    new Date(date + 'T00:00:00').toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    });
+
+const formatDateTime = (date: string) =>
+    new Date(date).toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+
 const Dashboard: React.FC = () => {
+    const { summary, recentVacations, loading, error } = useDashboard();
+
     const stats = [
         {
-            title: 'Total Employees',
-            value: '—',
+            title: 'Collaborators',
+            value: summary?.totalCollaborators ?? 0,
             icon: <PeopleRounded />,
             color: '#6366f1',
-            subtitle: 'Active collaborators',
+            subtitle: 'With vacation requests',
         },
         {
-            title: 'Vacations This Month',
-            value: '—',
-            icon: <BeachAccessRounded />,
-            color: '#f59e0b',
-            subtitle: 'Approved requests',
-        },
-        {
-            title: 'Pending Requests',
-            value: '—',
+            title: 'Pending',
+            value: summary?.totalPending ?? 0,
             icon: <PendingActionsRounded />,
-            color: '#ef4444',
+            color: '#f59e0b',
             subtitle: 'Awaiting approval',
         },
         {
-            title: 'Approved This Year',
-            value: '—',
+            title: 'Approved',
+            value: summary?.totalApproved ?? 0,
             icon: <CheckCircleRounded />,
             color: '#10b981',
-            subtitle: 'Total approvals',
+            subtitle: 'Confirmed requests',
+        },
+        {
+            title: 'Rejected',
+            value: summary?.totalRejected ?? 0,
+            icon: <CancelRounded />,
+            color: '#ef4444',
+            subtitle: 'Declined requests',
         },
     ];
 
@@ -94,60 +133,75 @@ const Dashboard: React.FC = () => {
                 </Typography>
             </Box>
 
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
             <Grid container spacing={3}>
                 {stats.map((stat) => (
                     <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={stat.title}>
-                        <StatCard {...stat} />
+                        <StatCard {...stat} loading={loading} />
                     </Grid>
                 ))}
             </Grid>
 
-            <Grid container spacing={3} sx={{ mt: 1 }}>
-                <Grid size={{ xs: 12, md: 8 }}>
-                    <Card sx={{ height: 320 }}>
-                        <CardContent
-                            sx={{
-                                p: 3,
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <BeachAccessRounded sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                            <Typography color="text.secondary" sx={{ fontWeight: 500 }}>
-                                Vacation Calendar
-                            </Typography>
-                            <Typography variant="caption" color="text.disabled">
-                                Coming soon
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card sx={{ height: 320 }}>
-                        <CardContent
-                            sx={{
-                                p: 3,
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <PendingActionsRounded sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                            <Typography color="text.secondary" sx={{ fontWeight: 500 }}>
-                                Recent Requests
-                            </Typography>
-                            <Typography variant="caption" color="text.disabled">
-                                Coming soon
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
+            <Card sx={{ mt: 3 }}>
+                <CardContent sx={{ p: 0 }}>
+                    <Box sx={{ px: 3, py: 2, borderBottom: 1, borderColor: 'divider' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                            Recent Requests
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Last 5 vacation requests
+                        </Typography>
+                    </Box>
+
+                    <TableContainer>
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={{ fontWeight: 600 }}>Employee</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Period</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                                    <TableCell sx={{ fontWeight: 600 }}>Requested on</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {loading
+                                    ? Array.from({ length: 5 }).map((_, i) => (
+                                        <TableRow key={i}>
+                                            {Array.from({ length: 4 }).map((__, j) => (
+                                                <TableCell key={j}>
+                                                    <Skeleton variant="text" />
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    ))
+                                    : recentVacations.length === 0
+                                        ? (
+                                            <TableRow>
+                                                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                                                    <Typography color="text.secondary">
+                                                        No vacation requests yet.
+                                                    </Typography>
+                                                </TableCell>
+                                            </TableRow>
+                                        )
+                                        : recentVacations.map((v) => (
+                                            <TableRow key={v.id} hover>
+                                                <TableCell>{v.employeeName}</TableCell>
+                                                <TableCell>
+                                                    {formatDate(v.startDate)} — {formatDate(v.endDate)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <VacationStatusChip status={v.status} />
+                                                </TableCell>
+                                                <TableCell>{formatDateTime(v.createdAt)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </CardContent>
+            </Card>
         </Box>
     );
 };

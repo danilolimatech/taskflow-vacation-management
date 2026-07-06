@@ -48,6 +48,17 @@ public class VacationValidator {
         }
     }
 
+    public void validateDelete(Vacation vacation, Employee employee) {
+
+        if (!vacation.getEmployee().getId().equals(employee.getId())) {
+            throw new ForbiddenException("vacation.access_denied");
+        }
+
+        if (vacation.getStatus() != VacationStatus.PENDING) {
+            throw new ConflictException("vacation.not_pending");
+        }
+    }
+
     public void validateApproveOrReject(Vacation vacation, Employee reviewer) {
 
         if (vacation.getStatus() != VacationStatus.PENDING) {

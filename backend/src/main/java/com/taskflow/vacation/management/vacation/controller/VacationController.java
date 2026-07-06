@@ -3,6 +3,7 @@ package com.taskflow.vacation.management.vacation.controller;
 import com.taskflow.vacation.management.vacation.dto.VacationRequest;
 import com.taskflow.vacation.management.vacation.dto.VacationResponse;
 import com.taskflow.vacation.management.vacation.dto.VacationSummaryResponse;
+import com.taskflow.vacation.management.vacation.entity.VacationStatus;
 import com.taskflow.vacation.management.vacation.service.VacationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -32,7 +32,7 @@ public class VacationController {
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('COLLABORATOR')")
+    @PreAuthorize("hasRole('COLLABORATOR')")
     public void update(
             @PathVariable UUID id,
             @Valid @RequestBody VacationRequest request
@@ -45,9 +45,10 @@ public class VacationController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'COLLABORATOR')")
     public Page<VacationResponse> findAll(
             @RequestParam(required = false) String employeeName,
+            @RequestParam(required = false) VacationStatus status,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
     ) {
-        return vacationService.findAll(employeeName, pageable);
+        return vacationService.findAll(employeeName, status, pageable);
     }
 
     @GetMapping("/summary")

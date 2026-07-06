@@ -15,6 +15,7 @@ import com.taskflow.vacation.management.user.service.UserService;
 import com.taskflow.vacation.management.user.entity.User;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -34,6 +36,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public EmployeeResponse create(CreateEmployeeRequest request) {
+        log.info("Creating employee. name={}, email={}, role={}", request.fullName(), request.email(), request.role());
+
         employeeValidator.validateEmail(request.email(), null);
         employeeValidator.validateBusinessRules(request.role(), request.managerId());
         Employee manager = employeeValidator.getManager(request.managerId());
@@ -41,11 +45,15 @@ public class EmployeeServiceImpl implements EmployeeService {
         User user = userService.create(request.username(), request.password(), request.role());
         Employee employee = employeeRepository.save(new Employee(request.fullName(), request.email(), request.role(), manager, user));
 
+        log.info("Employee created successfully. id={}, name={}, role={}", employee.getId(), employee.getFullName(), employee.getRole());
+
         return employeeMapper.toResponse(employee);
     }
 
     @Override
     public void update(UUID id, UpdateEmployeeRequest request) {
+        log.info("Updating employee. id={}, name={}", id, request.fullName());
+
         Employee employee = findEmployeeById(id);
 
         employeeValidator.validateEmail(request.email(), id);
@@ -57,15 +65,23 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setFullName(request.fullName());
         employee.setEmail(request.email());
         employee.setManager(manager);
+
+        log.info("Employee updated successfully. id={}, name={}", id, request.fullName());
     }
 
     @Override
     public EmployeeResponse findById(UUID id) {
-        return employeeMapper.toResponse(findEmployeeById(id));
+        log.debug("Fetching employee. id={}", id);
+        EmployeeResponse response = employeeMapper.toResponse(findEmployeeById(id));
+        log.debug("Employee fetched successfully. id={}", id);
+        return response;
     }
 
     @Override
     public Page<EmployeeResponse> findAll(UUID managerId, String fullName, String email, Role role, Pageable pageable) {
+        log.debug("Listing employees. filter=managerId:{}, fullName:{}, email:{}, role:{}, page={}",
+                managerId, fullName, email, role, pageable.getPageNumber());
+
         Specification<Employee> spec = Specification.allOf(
                 EmployeeSpec.hasManagerId(managerId),
                 EmployeeSpec.hasFullNameLike(fullName),
@@ -77,6 +93,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public void delete(UUID id) {
+        log.info("Deleting employee. id={}", id);
+
         Employee employee = findEmployeeById(id);
 
         if (employeeRepository.existsByManagerId(id)) {
@@ -85,6 +103,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         employee.delete();
         employee.getUser().deactivate();
+
+        log.info("Employee deleted successfully. id={}, name={}", id, employee.getFullName());
     }
 
     private Employee findEmployeeById(UUID id) {

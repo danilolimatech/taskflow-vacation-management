@@ -43,6 +43,15 @@ const formatDate = (date: string) =>
         year: 'numeric',
     });
 
+const formatDateTime = (date: string) =>
+    new Date(date).toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+
 const VacationTable: React.FC<Props> = ({
     vacations,
     totalElements,
@@ -56,8 +65,10 @@ const VacationTable: React.FC<Props> = ({
     onReject,
 }) => {
     const { user } = useAuth();
-    const isAdminOrManager = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+    const isAdmin = user?.role === 'ADMIN';
+    const isAdminOrManager = isAdmin || user?.role === 'MANAGER';
     const isCollaborator = user?.role === 'COLLABORATOR';
+    const columnCount = isAdminOrManager ? 7 : 6;
 
     return (
         <Box>
@@ -72,6 +83,7 @@ const VacationTable: React.FC<Props> = ({
                             <TableCell sx={{ fontWeight: 600 }}>End Date</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Days</TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                            <TableCell sx={{ fontWeight: 600 }}>Requested on</TableCell>
                             <TableCell sx={{ fontWeight: 600 }} align="right">
                                 Actions
                             </TableCell>
@@ -81,7 +93,7 @@ const VacationTable: React.FC<Props> = ({
                         {loading
                             ? Array.from({ length: 5 }).map((_, i) => (
                                 <TableRow key={i}>
-                                    {Array.from({ length: isAdminOrManager ? 6 : 5 }).map((__, j) => (
+                                    {Array.from({ length: columnCount }).map((__, j) => (
                                         <TableCell key={j}>
                                             <Skeleton variant="text" />
                                         </TableCell>
@@ -91,7 +103,7 @@ const VacationTable: React.FC<Props> = ({
                             : vacations.length === 0
                                 ? (
                                     <TableRow>
-                                        <TableCell colSpan={isAdminOrManager ? 6 : 5} align="center" sx={{ py: 6 }}>
+                                        <TableCell colSpan={columnCount} align="center" sx={{ py: 6 }}>
                                             <Typography color="text.secondary">No vacation requests found.</Typography>
                                         </TableCell>
                                     </TableRow>
@@ -104,6 +116,7 @@ const VacationTable: React.FC<Props> = ({
                                         ) + 1;
                                     const isPending = v.status === 'PENDING';
                                     const canEditDelete = isCollaborator && isPending;
+                                    const canAdminDelete = isAdmin && isPending;
                                     const canApproveReject = isAdminOrManager && isPending;
 
                                     return (
@@ -115,6 +128,7 @@ const VacationTable: React.FC<Props> = ({
                                             <TableCell>
                                                 <VacationStatusChip status={v.status} />
                                             </TableCell>
+                                            <TableCell>{formatDateTime(v.createdAt)}</TableCell>
                                             <TableCell align="right">
                                                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5 }}>
                                                     {isAdminOrManager && (
@@ -143,6 +157,20 @@ const VacationTable: React.FC<Props> = ({
                                                                     </IconButton>
                                                                 </span>
                                                             </Tooltip>
+                                                            {isAdmin && (
+                                                                <Tooltip title={canAdminDelete ? 'Cancel request' : 'Only pending requests can be cancelled'}>
+                                                                    <span>
+                                                                        <IconButton
+                                                                            size="small"
+                                                                            color="error"
+                                                                            onClick={() => onDelete(v)}
+                                                                            disabled={!canAdminDelete}
+                                                                        >
+                                                                            <DeleteRounded fontSize="small" />
+                                                                        </IconButton>
+                                                                    </span>
+                                                                </Tooltip>
+                                                            )}
                                                         </>
                                                     )}
                                                     {isCollaborator && (

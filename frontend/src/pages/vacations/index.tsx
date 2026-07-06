@@ -7,16 +7,24 @@ import {
     TextField,
     InputAdornment,
     Alert,
+    MenuItem,
 } from '@mui/material';
 import { AddRounded, SearchRounded } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVacations } from './hooks/useVacations';
-import type { Vacation } from './hooks/useVacations';
+import type { Vacation, VacationStatus } from './hooks/useVacations';
 import VacationTable from './components/VacationTable';
 import VacationFormModal from './components/VacationFormModal';
 import VacationDeleteModal from './components/VacationDeleteModal';
 import api from '../../api/axios';
 import { getErrorMessage } from '../../api/errorHandler';
+
+const STATUS_OPTIONS: { value: VacationStatus; label: string }[] = [
+    { value: '', label: 'All' },
+    { value: 'PENDING', label: 'Pending' },
+    { value: 'APPROVED', label: 'Approved' },
+    { value: 'REJECTED', label: 'Rejected' },
+];
 
 const Vacations: React.FC = () => {
     const { user } = useAuth();
@@ -36,6 +44,7 @@ const Vacations: React.FC = () => {
     } = useVacations();
 
     const [employeeNameInput, setEmployeeNameInput] = useState('');
+    const [statusInput, setStatusInput] = useState<VacationStatus>('PENDING');
 
     const [formOpen, setFormOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
@@ -44,15 +53,22 @@ const Vacations: React.FC = () => {
     const [actionError, setActionError] = useState<string | null>(null);
     const [selectedVacation, setSelectedVacation] = useState<Vacation | null>(null);
 
-    const handleSearch = () => applyFilters({ employeeName: employeeNameInput });
+    const handleSearch = () =>
+        applyFilters({ employeeName: employeeNameInput, status: statusInput });
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleSearch();
     };
 
+    const handleStatusChange = (value: VacationStatus) => {
+        setStatusInput(value);
+        applyFilters({ employeeName: employeeNameInput, status: value });
+    };
+
     const handleClear = () => {
         setEmployeeNameInput('');
-        applyFilters({ employeeName: '' });
+        setStatusInput('PENDING');
+        applyFilters({ employeeName: '', status: 'PENDING' });
     };
 
     const handleEdit = (vacation: Vacation) => {
@@ -105,7 +121,7 @@ const Vacations: React.FC = () => {
         }
     };
 
-    const hasActiveFilters = !!filters.employeeName;
+    const hasActiveFilters = !!filters.employeeName || filters.status !== 'PENDING';
 
     return (
         <Box>
@@ -139,6 +155,22 @@ const Vacations: React.FC = () => {
                             sx={{ minWidth: 240 }}
                         />
                     )}
+
+                    <TextField
+                        select
+                        size="small"
+                        label="Status"
+                        value={statusInput}
+                        onChange={(e) => handleStatusChange(e.target.value as VacationStatus)}
+                        sx={{ minWidth: 140 }}
+                    >
+                        {STATUS_OPTIONS.map((opt) => (
+                            <MenuItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+
                     {!isCollaborator && (
                         <Button variant="outlined" onClick={handleSearch} size="small">
                             Search
@@ -146,7 +178,7 @@ const Vacations: React.FC = () => {
                     )}
                     {hasActiveFilters && (
                         <Button variant="text" onClick={handleClear} size="small" color="inherit">
-                            Clear
+                            Reset
                         </Button>
                     )}
                 </Box>

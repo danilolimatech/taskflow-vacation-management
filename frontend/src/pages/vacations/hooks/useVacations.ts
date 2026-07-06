@@ -22,8 +22,11 @@ interface VacationPage {
     };
 }
 
+export type VacationStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | '';
+
 export interface VacationFilters {
     employeeName: string;
+    status: VacationStatus;
 }
 
 export const useVacations = () => {
@@ -31,7 +34,7 @@ export const useVacations = () => {
     const [totalElements, setTotalElements] = useState(0);
     const [page, setPage] = useState(0);
     const [pageSize] = useState(20);
-    const [filters, setFilters] = useState<VacationFilters>({ employeeName: '' });
+    const [filters, setFilters] = useState<VacationFilters>({ employeeName: '', status: 'PENDING' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +48,7 @@ export const useVacations = () => {
                 sort: 'createdAt,desc',
             };
             if (filters.employeeName) params.employeeName = filters.employeeName;
+            if (filters.status) params.status = filters.status;
 
             const { data } = await api.get<VacationPage>('/vacations', { params });
             setVacations(data.content);
